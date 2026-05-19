@@ -4,10 +4,95 @@
 // Get a free hosted Postgres database in seconds: `npx create-db`
 
 generator client {
-  provider = "prisma-client"
-  output   = "../generated/prisma"
+  provider = "prisma-client-js"
 }
 
 datasource db {
   provider = "postgresql"
+}
+
+// ------------------------------------------------------
+// 1. ENTIDADES PRINCIPALES
+// ------------------------------------------------------
+
+model Joven {
+  id              Int      @id @default(autoincrement())
+  rut             String   @unique
+  nombre          String
+  fechaNacimiento DateTime
+  genero          String
+  email           String?  // El signo ? significa que es opcional
+  telefono        String?
+  bautizado       Boolean  @default(false)
+  
+  // Información adicional de contacto y salud
+  telefonoPapa    String?
+  telefonoMama    String?
+  centroSalud     String?
+
+  // Relaciones
+  grupoId         Int
+  grupo           Grupo    @relation(fields: [grupoId], references: [id])
+  
+  asistencias     Asistencia[]
+  ministerios     JovenMinisterio[]
+}
+
+model Grupo {
+  id          Int      @id @default(autoincrement())
+  numero      Int      @unique // Ej: 1, 2, 3... 10
+  descripcion String?  // Ej: "14 años", "15 años", "+24 años"
+  
+  jovenes     Joven[]  // Un grupo tiene muchos jóvenes
+}
+
+model Reunion {
+  id                 Int      @id @default(autoincrement())
+  fecha              DateTime @unique
+  
+  // Reflejando la columna "Prédica / Taller"
+  tipo               String   @default("Prédica") 
+  
+  predicador         String?
+  tituloMensaje      String?
+  
+  // Reflejando las columnas de actividades booleanas
+  huboJuego          Boolean  @default(false)
+  huboObra           Boolean  @default(false)
+
+  // Las relaciones de quiénes asistieron
+  asistencias        Asistencia[]
+}
+
+model Ministerio {
+  id          Int      @id @default(autoincrement())
+  nombre      String   @unique // Ej: "Música", "Teatro"
+  
+  integrantes JovenMinisterio[]
+}
+
+// ------------------------------------------------------
+// 2. TABLAS INTERMEDIAS (Para las relaciones Muchos-a-Muchos)
+// ------------------------------------------------------
+
+// Tabla puente para saber quién fue a qué reunión
+model Asistencia {
+  jovenId    Int
+  reunionId  Int
+
+  joven      Joven   @relation(fields: [jovenId], references: [id])
+  reunion    Reunion @relation(fields: [reunionId], references: [id])
+
+  @@id([jovenId, reunionId]) // La llave primaria es la combinación de ambos
+}
+
+// Tabla puente para saber quién está en qué ministerio
+model JovenMinisterio {
+  jovenId      Int
+  ministerioId Int
+
+  joven        Joven      @relation(fields: [jovenId], references: [id])
+  ministerio   Ministerio @relation(fields: [ministerioId], references: [id])
+
+  @@id([jovenId, ministerioId])
 }
