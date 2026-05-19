@@ -58,3 +58,6 @@ Si alguien quiere agregar la instalación para otros OS, bienvenido sea jeje.
 
 Se utilizará el entorno de PostreSQL para el modelo de la base de datos, aquí un diagrama para facilitar el entendimiento de cómo trabajaremos:
 
+![foto](images/EDR.png)
+
+**Nota:** Todavía falta agregar muchos atributos, especialmente los de la ficha y uno que otro sobre la hoja "Datos sobre Reuniones" del excel de "Estadística CR" pero no afectan la lógica general.
