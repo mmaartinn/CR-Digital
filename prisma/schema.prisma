@@ -16,76 +16,80 @@ datasource db {
 // ------------------------------------------------------
 
 model Joven {
-  id              Int      @id @default(autoincrement())
-  rut             String   @unique
-  nombre          String
-  fechaNacimiento DateTime
-  genero          String
-  email           String?  // El signo ? significa que es opcional
-  telefono        String?
-  direccion           String?           
-  idExcel             String? // Solo para la migración
-  bautizado       Boolean  @default(false)
-  vivio110            Boolean           @default(false)  
-  tieneBibliaFisica   Boolean           @default(false)  
+  id                          Int               @id @default(autoincrement())
+  rut                         String?          @unique
+  nombre                      String
+  fechaNacimiento             DateTime
+  genero                      String
+  email                       String?           
+  telefono                    String?
+  direccion                   String?           
+  idExcel                     String?           // Solo para la migración
+  bautizado                   Boolean           @default(false)
+  vivio110                    Boolean           @default(false)  
+  tieneBibliaFisica           Boolean           @default(false)  
   
-// Ficha Familiar y Emergencias
-  nombrePadre         String?            
-  rutPadre            String?            
-  telefonoPapa        String?
-  direccionPadre      String?            
+  // Ficha Familiar y Emergencias
+  nombrePadre                 String?           
+  rutPadre                    String?           
+  telefonoPapa                String?
+  direccionPadre              String?           
   
-  nombreMadre         String?           
-  rutMadre            String?           
-  telefonoMama        String?
-  direccionMadre      String?           
+  nombreMadre                 String?           
+  rutMadre                    String?           
+  telefonoMama                String?
+  direccionMadre              String?           
 
-  nombreExtra         String?           
-  parentescoExtra     String?            
-  telefonoExtra       String?           
+  nombreExtra                 String?           
+  parentescoExtra             String?           
+  telefonoExtra               String?           
 
   // Ficha Médica
-  previsionSalud      String?            
-  centroSalud         String?
-  tipoSangre          String?            
-  enfermedadesCronicas String?           
-  tratamientos        String?           
+  previsionSalud              String?           
+  centroSalud                 String?
+  tipoSangre                  String?           
+  enfermedadesCronicas        String?           
+  tratamientos                String?           
   medicamentosContraindicados String?    
   alimentosContraindicados    String?    
+  estudio                     String            @default("Sin Estudio")
 
   // Relaciones
-  grupoId         Int
-  grupo           Grupo    @relation(fields: [grupoId], references: [id])
+  grupoId                     Int
+  grupo                       Grupo             @relation(fields: [grupoId], references: [id])
   
-  asistencias     Asistencia[]
-  ministerios     JovenMinisterio[]
+  asistencias                 Asistencia[]
+  ministerios                 JovenMinisterio[]
 }
 
 model Grupo {
   id          Int      @id @default(autoincrement())
-  numero      Int      @unique // Ej: 1, 2, 3... 10
-  descripcion String?  // Ej: "14 años", "15 años", "+24 años"
+  numero      Int      @unique // Ej: 1, 2, 3... 12
+  descripcion String?  // Ej: "14 años", "15 años", "23-24 años"
   
   jovenes     Joven[]  // Un grupo tiene muchos jóvenes
 }
 
 model Reunion {
-  id                 Int      @id @default(autoincrement())
-  fecha              DateTime @unique
-  dia                 String?
+  id            Int      @id @default(autoincrement())
+  fecha         DateTime @unique
+  dia           String?
   
   // Reflejando la columna "Prédica / Taller"
-  tipo               String   @default("Prédica") 
+  tipo          String   @default("Prédica") 
   
-  predicador         String?
-  tituloMensaje      String?
+  // Para diferenciar Reunión del Estudio Bíblico
+  categoria     String   @default("Reunión")
+
+  predicador    String?
+  tituloMensaje String?
   
   // Reflejando las columnas de actividades booleanas
-  huboJuego          Boolean  @default(false)
-  huboObra           Boolean  @default(false)
+  huboJuego     Boolean  @default(false)
+  huboObra      Boolean  @default(false)
 
   // Las relaciones de quiénes asistieron
-  asistencias        Asistencia[]
+  asistencias   Asistencia[]
 }
 
 model Ministerio {
@@ -101,11 +105,11 @@ model Ministerio {
 
 // Tabla puente para saber quién fue a qué reunión
 model Asistencia {
-  jovenId    Int
-  reunionId  Int
+  jovenId   Int
+  reunionId Int
 
-  joven      Joven   @relation(fields: [jovenId], references: [id])
-  reunion    Reunion @relation(fields: [reunionId], references: [id])
+  joven     Joven   @relation(fields: [jovenId], references: [id])
+  reunion   Reunion @relation(fields: [reunionId], references: [id])
 
   @@id([jovenId, reunionId]) // La llave primaria es la combinación de ambos
 }
