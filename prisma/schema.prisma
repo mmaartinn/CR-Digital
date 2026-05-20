@@ -23,12 +23,35 @@ model Joven {
   genero          String
   email           String?  // El signo ? significa que es opcional
   telefono        String?
+  direccion           String?           
+  idExcel             String? // Solo para la migración
   bautizado       Boolean  @default(false)
+  vivio110            Boolean           @default(false)  
+  tieneBibliaFisica   Boolean           @default(false)  
   
-  // Información adicional de contacto y salud
-  telefonoPapa    String?
-  telefonoMama    String?
-  centroSalud     String?
+// Ficha Familiar y Emergencias
+  nombrePadre         String?            
+  rutPadre            String?            
+  telefonoPapa        String?
+  direccionPadre      String?            
+  
+  nombreMadre         String?           
+  rutMadre            String?           
+  telefonoMama        String?
+  direccionMadre      String?           
+
+  nombreExtra         String?           
+  parentescoExtra     String?            
+  telefonoExtra       String?           
+
+  // Ficha Médica
+  previsionSalud      String?            
+  centroSalud         String?
+  tipoSangre          String?            
+  enfermedadesCronicas String?           
+  tratamientos        String?           
+  medicamentosContraindicados String?    
+  alimentosContraindicados    String?    
 
   // Relaciones
   grupoId         Int
@@ -49,6 +72,7 @@ model Grupo {
 model Reunion {
   id                 Int      @id @default(autoincrement())
   fecha              DateTime @unique
+  dia                 String?
   
   // Reflejando la columna "Prédica / Taller"
   tipo               String   @default("Prédica") 
