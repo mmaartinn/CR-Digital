@@ -1,2 +1,335 @@
-para ver el informe semanal y el historial de asistencia
-(quizás haya que separarlo eso si)
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Matriz y Reportes CR</title>
+    <link rel="stylesheet" href="/css/global.css">
+    <link rel="stylesheet" href="/css/semanal.css">
+    
+    <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+
+    <script>
+        const token = localStorage.getItem('token');
+        if (!token) window.location.replace('/login.html');
+    </script>
+</head>
+<body>
+
+    <nav class="navbar">
+        <div class="navbar-brand">CR Digital - Análisis de Asistencia</div>
+        <ul class="navbar-nav">
+            <li><button onclick="cerrarSesion()" class="btn btn-secondary">Cerrar Sesión</button></li>
+        </ul>
+    </nav>
+
+    <div class="toolbar">
+        <div class="toolbar-group">
+            <select id="select-reunion" class="search-input" style="cursor: pointer;" onchange="cargarDatosPrincipales()">
+                <option value="">Análisis: Última reunión histórica</option>
+            </select>
+            <input type="text" id="input-busqueda" class="search-input" placeholder="Buscar joven..." onkeyup="filtrarYRenderizar()">
+        </div>
+        <div class="toolbar-group">
+            <button onclick="exportarExcel()" class="btn btn-success" style="background-color: #16a34a; color: white;">⬇ Descargar Excel</button>
+            <button onclick="exportarPDF()" class="btn btn-danger" style="background-color: #dc2626; color: white;">⬇ Descargar PDF</button>
+        </div>
+    </div>
+
+    <div class="tabs">
+        <button class="tab-btn active" onclick="cambiarVista('grupos', this)">Informe por Grupos</button>
+        <button class="tab-btn" onclick="cambiarVista('ministerios', this)">Informe por Ministerios</button>
+        <button class="tab-btn" onclick="cambiarVista('matriz', this)">Vista Matriz</button>
+    </div>
+
+    <div id="area-impresion">
+
+        <div id="vista-grupos" class="vista-contenido active">
+            <div class="informe-grid" id="grid-grupos"></div>
+        </div>
+
+        <div id="vista-ministerios" class="vista-contenido">
+            <div class="informe-grid" id="grid-ministerios"></div>
+        </div>
+
+                <div id="vista-matriz" class="vista-contenido">
+            <div class="matriz-container">
+                <table class="matriz-table" id="tabla-matriz">
+                    <thead>
+                        <tr id="matriz-headers">
+                            <th class="sortable" onclick="ordenarMatriz('grupo')">Grupo</th>
+                            <th class="sortable" onclick="ordenarMatriz('nombre')">Nombre</th>
+                            <th class="sortable" onclick="ordenarMatriz('faltas')">FALTAS</th>
+                            <th>RACHA</th>
+                            <th class="sortable" onclick="ordenarMatriz('anteriores')">ANTERIORES</th>
+                        </tr>
+                    </thead>
+                    <tbody id="matriz-body">
+                        <tr><td colspan="15">Cargando base de datos...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        let datosOriginales = [];
+        let datosFechas = [];
+        let direccionOrden = 1; 
+        let columnaOrden = null;
+        let vistaActual = 'matriz'; 
+
+        function cerrarSesion() {
+            localStorage.removeItem('token');
+            localStorage.removeItem('usuario');
+            window.location.replace('/login.html');
+        }
+
+        function cambiarVista(vistaId, btnElement) {
+            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+            btnElement.classList.add('active');
+
+            document.querySelectorAll('.vista-contenido').forEach(vista => vista.classList.remove('active'));
+            document.getElementById(`vista-${vistaId}`).classList.add('active');
+
+            vistaActual = vistaId;
+        }
+
+        async function cargarReunionesDisponibles() {
+            try {
+                const respuesta = await fetch('/api/informes/reuniones', { headers: { 'Authorization': `Bearer ${token}` } });
+                const reuniones = await respuesta.json();
+                const select = document.getElementById('select-reunion');
+
+                reuniones.forEach(reunion => {
+                    const option = document.createElement('option');
+                    option.value = reunion.fecha; 
+                    const fechaObj = new Date(reunion.fecha);
+                    const fechaTexto = fechaObj.toLocaleDateString('es-CL', { day: '2-digit', month: 'long', year: 'numeric', timeZone: 'UTC' });
+                    option.textContent = `${fechaTexto} (${reunion.tipo})`;
+                    select.appendChild(option);
+                });
+            } catch (error) { console.error("Error cargando reuniones"); }
+        }
+
+        async function cargarDatosPrincipales() {
+            try {
+                const fechaSeleccionada = document.getElementById('select-reunion').value;
+                let url = '/api/informes/semanal' + (fechaSeleccionada ? `?fecha=${fechaSeleccionada}` : '');
+
+                const respuesta = await fetch(url, { headers: { 'Authorization': `Bearer ${token}` } });
+                if (!respuesta.ok) throw new Error();
+
+                const datos = await respuesta.json();
+                datosFechas = datos.reuniones;
+                datosOriginales = datos.jovenes; 
+
+                const thead = document.getElementById('matriz-headers');
+                while (thead.children.length > 5) {
+                    thead.removeChild(thead.lastChild);
+                }
+                datosFechas.forEach(fecha => {
+                    const th = document.createElement('th');
+                    th.textContent = fecha;
+                    thead.appendChild(th);
+                });
+
+                document.getElementById('input-busqueda').value = '';
+                filtrarYRenderizar(); 
+
+            } catch (error) {
+                document.getElementById('matriz-body').innerHTML = `<tr><td colspan="15" style="color:red; text-align:center;">Error al cargar datos.</td></tr>`;
+            }
+        }
+
+        function limpiarTexto(texto) {
+            if (!texto) return "";
+            return texto.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+        }
+
+        function filtrarYRenderizar() {
+            const busqueda = limpiarTexto(document.getElementById('input-busqueda').value);
+            const filtrados = datosOriginales.filter(joven => 
+                limpiarTexto(joven.nombre).includes(busqueda) || 
+                limpiarTexto(joven.grupo).includes(busqueda) ||
+                limpiarTexto(joven.ministerios).includes(busqueda)
+            );
+
+            renderizarMatriz(filtrados);
+            renderizarInformes(filtrados, 'grupo', 'grid-grupos');
+            renderizarInformes(filtrados, 'ministerios', 'grid-ministerios');
+        }
+
+        function renderizarMatriz(lista) {
+            const tbody = document.getElementById('matriz-body');
+            tbody.innerHTML = '';
+            if (lista.length === 0) return tbody.innerHTML = `<tr><td colspan="15" class="text-center">Sin resultados</td></tr>`;
+
+            lista.forEach(joven => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td>${joven.grupo}</td>
+                    <td>${joven.nombre}</td>
+                    <td style="font-weight: bold;">${joven.faltas}</td>
+                    <td class="cell-racha">${joven.racha}</td>
+                    <td style="font-weight: bold;">${joven.anteriores}</td>
+                `;
+                joven.historial.forEach(valor => {
+                    const td = document.createElement('td');
+                    td.textContent = valor; 
+                    td.className = valor === 1 ? 'cell-presente' : 'cell-ausente';
+                    tr.appendChild(td);
+                });
+                tbody.appendChild(tr);
+            });
+        }
+
+        // LÓGICA DE AGRUPACIÓN Y ORDENAMIENTO MEJORADA
+        function renderizarInformes(lista, propiedadAgrupacion, contenedorId) {
+            const contenedor = document.getElementById(contenedorId);
+            contenedor.innerHTML = '';
+
+            if(lista.length === 0) return;
+
+            const agrupaciones = {};
+            
+            lista.forEach(joven => {
+                if(propiedadAgrupacion === 'ministerios') {
+                    if(joven.ministerios !== 'Sin Ministerio') {
+                        let claves = joven.ministerios.split(',').map(s => s.trim());
+                        claves.forEach(clave => {
+                            if(!agrupaciones[clave]) agrupaciones[clave] = { titulo: clave, miembros: [] };
+                            agrupaciones[clave].miembros.push(joven);
+                        });
+                    }
+                } else {
+                    // Agrupación por Número de Grupo
+                    let clave = (joven.numero_grupo !== null && joven.numero_grupo !== undefined) ? joven.numero_grupo : 9999;
+                    let titulo = clave !== 9999 ? `Grupo ${joven.numero_grupo} : ${joven.grupo}` : 'Sin Grupo';
+                    
+                    if(!agrupaciones[clave]) agrupaciones[clave] = { titulo: titulo, miembros: [] };
+                    agrupaciones[clave].miembros.push(joven);
+                }
+            });
+
+            // Extraer las llaves y ordenarlas correctamente
+            let llavesOrdenadas = Object.keys(agrupaciones);
+            
+            if (propiedadAgrupacion === 'ministerios') {
+                llavesOrdenadas.sort(); // Orden alfabético para ministerios
+            } else {
+                llavesOrdenadas.sort((a, b) => Number(a) - Number(b)); // Orden matemático para los grupos
+            }
+
+            llavesOrdenadas.forEach(clave => {
+                const miembros = agrupaciones[clave].miembros;
+                const tituloAMostrar = agrupaciones[clave].titulo; // Usamos el título combinado
+                
+                let indiceSemanaActual = (miembros.reduce((sum, m) => sum + m.faltas, 0) / miembros.length).toFixed(2);
+                let indiceSemanaPasada = (miembros.reduce((sum, m) => sum + m.anteriores, 0) / miembros.length).toFixed(2);
+                
+                let alturaActual = (indiceSemanaActual / 8) * 100;
+                let alturaPasada = (indiceSemanaPasada / 8) * 100;
+
+                const presentes = miembros.filter(m => m.historial[m.historial.length - 1] === 1);
+                const ausentes = miembros.filter(m => m.historial[m.historial.length - 1] === 0);
+
+                let filasHTML = `
+                    <tr><th colspan="3" class="header-grupo">${tituloAMostrar.toUpperCase()}</th></tr>
+                    <tr><td colspan="3" class="header-asistieron">Asistieron (${presentes.length})</td></tr>
+                    <tr><th>Nombre</th><th>Faltas</th><th>Racha</th></tr>
+                `;
+                
+                if (presentes.length === 0) filasHTML += `<tr><td colspan="3" class="text-center" style="color:var(--text-muted);">Ninguno</td></tr>`;
+                presentes.forEach(p => {
+                    filasHTML += `<tr><td>${p.nombre}</td><td class="text-center">${p.faltas}</td><td class="text-center" style="font-size:1.1rem;">${p.racha}</td></tr>`;
+                });
+
+                filasHTML += `
+                    <tr><td colspan="3" class="header-faltaron">Faltaron (${ausentes.length})</td></tr>
+                    <tr><th>Nombre</th><th>Faltas</th><th>Racha</th></tr>
+                `;
+
+                if (ausentes.length === 0) filasHTML += `<tr><td colspan="3" class="text-center" style="color:var(--text-muted);">Ninguno</td></tr>`;
+                ausentes.forEach(a => {
+                    filasHTML += `<tr><td>${a.nombre}</td><td class="text-center">${a.faltas}</td><td class="text-center" style="font-size:1.1rem;">${a.racha}</td></tr>`;
+                });
+
+                const card = document.createElement('div');
+                card.className = 'informe-card';
+                card.innerHTML = `
+                    <div class="informe-tabla-wrap">
+                        <table class="informe-table">${filasHTML}</table>
+                    </div>
+                    <div class="grafico-wrap" style="margin-left: 3rem; min-width: 250px;">
+                        <div class="grafico-titulo">Comparación Índice de Faltas<br><span style="color:#64748b; font-weight:400; font-size:0.8rem;">${tituloAMostrar}</span></div>
+                        <div class="grafico-contenedor" style="margin-bottom: 1.5rem;">
+                            <div class="linea-guia linea-8"><span class="etiqueta-eje">8</span></div>
+                            <div class="linea-guia linea-6"><span class="etiqueta-eje">6</span></div>
+                            <div class="linea-guia linea-4"><span class="etiqueta-eje">4</span></div>
+                            <div class="linea-guia linea-2"><span class="etiqueta-eje">2</span></div>
+                            
+                            <div class="barra-grupo" style="height: 100%; position: relative; justify-content: flex-end;">
+                                <span style="color: #3b82f6; font-size: 0.95rem; font-weight: bold; margin-bottom: 4px;">${indiceSemanaPasada}</span>
+                                <div class="barra" style="height: ${alturaPasada}%; background-color: #3b82f6; width: 30px; border-radius: 2px 2px 0 0; min-height: 3px;"></div>
+                                <span class="barra-label" style="position: absolute; bottom: -25px; white-space: nowrap;">Semana Pasada</span>
+                            </div>
+                            <div class="barra-grupo" style="height: 100%; position: relative; justify-content: flex-end;">
+                                <span style="color: #ef4444; font-size: 0.95rem; font-weight: bold; margin-bottom: 4px;">${indiceSemanaActual}</span>
+                                <div class="barra" style="height: ${alturaActual}%; background-color: #ef4444; width: 30px; border-radius: 2px 2px 0 0; min-height: 3px;"></div>
+                                <span class="barra-label" style="position: absolute; bottom: -25px; white-space: nowrap;">Semana Actual</span>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                contenedor.appendChild(card);
+            });
+        }
+
+        function ordenarMatriz(columna) {
+            if(vistaActual !== 'matriz') return;
+            if (columnaOrden === columna) direccionOrden *= -1;
+            else { columnaOrden = columna; direccionOrden = 1; }
+
+            datosOriginales.sort((a, b) => {
+                if (a[columna] < b[columna]) return -1 * direccionOrden;
+                if (a[columna] > b[columna]) return 1 * direccionOrden;
+                return 0;
+            });
+            filtrarYRenderizar();
+        }
+
+        function exportarExcel() {
+            const tabla = document.getElementById('tabla-matriz');
+            const wb = XLSX.utils.table_to_book(tabla, { sheet: "Asistencia" });
+            XLSX.writeFile(wb, 'Matriz_Asistencia_CR.xlsx');
+        }
+
+        function exportarPDF() {
+            const elemento = document.getElementById(`vista-${vistaActual}`);
+            const tituloDoc = vistaActual === 'matriz' ? 'Matriz_CR' : `Informe_${vistaActual.toUpperCase()}_CR`;
+
+            const opciones = {
+                margin:       [0.4, 0.4, 0.4, 0.4],
+                filename:     `${tituloDoc}.pdf`,
+                image:        { type: 'jpeg', quality: 0.98 },
+                html2canvas:  { scale: 2, windowWidth: elemento.scrollWidth },
+                jsPDF:        { unit: 'in', format: 'legal', orientation: vistaActual === 'matriz' ? 'landscape' : 'portrait' },
+                pagebreak:    { mode: 'avoid-all' }
+            };
+
+            elemento.style.overflow = 'visible';
+            html2pdf().set(opciones).from(elemento).save().then(() => {
+                elemento.style.overflowX = 'auto';
+            });
+        }
+
+        window.onload = async function() {
+            await cargarReunionesDisponibles(); 
+            await cargarDatosPrincipales(); 
+        };
+    </script>
+</body>
+</html>

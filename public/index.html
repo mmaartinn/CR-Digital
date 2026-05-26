@@ -3,204 +3,48 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Cuenta Regresiva - Dashboard</title>
+    <title>CR Digital - Inicio</title>
+    <link rel="stylesheet" href="/css/global.css">
     <style>
-        body { font-family: Arial, sans-serif; padding: 20px; max-width: 900px; margin: 0 auto; color: #333; }
-        .tarjeta { border: 1px solid #ccc; padding: 15px; margin-bottom: 15px; border-radius: 5px; background-color: #f9f9f9; }
-        .metrica { font-size: 1.1em; margin: 8px 0; }
-        table { width: 100%; border-collapse: collapse; margin-top: 15px; }
-        th, td { border: 1px solid #ddd; padding: 6px; text-align: center; font-size: 13px; }
-        th { background-color: #f2f2f2; }
-        .presente { background-color: #d4edda; color: #155724; font-weight: bold; }
-        .ausente { background-color: #f8d7da; color: #721c24; }
-        .buscador { display: flex; gap: 10px; margin-top: 10px; }
-        input { padding: 8px; flex: 1; border: 1px solid #ccc; border-radius: 4px; }
-        button { padding: 8px 15px; background-color: #28a745; color: white; border: none; border-radius: 4px; cursor: pointer; }
-        button:hover { background-color: #218838; }
-        
-        /* Ficha individual re-diseñada con grilla */
-        .ficha-individual { background-color: #fff; border-left: 5px solid #28a745; padding: 15px; margin-top: 10px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
-        .grid-datos { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px; margin-bottom: 15px; }
-        .grid-datos p { margin: 4px 0; font-size: 14px; }
-        
-        /* Contenedor estilizado para las insignias de Ministerios */
-        .seccion-ministerios { margin-top: 12px; padding-top: 10px; border-top: 1px dashed #ddd; }
-        .contenedor-badges { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 5px; }
-        .badge-ministerio { background-color: #007bff; color: white; padding: 4px 10px; border-radius: 15px; font-size: 12px; font-weight: bold; }
-        .badge-vacio { background-color: #6c757d; color: white; padding: 4px 10px; border-radius: 15px; font-size: 12px; }
-        
-        .contenedor-tabla { overflow-x: auto; width: 100%; }
+        /* Estilos súper básicos solo para centrar el contenido */
+        body {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            text-align: center;
+        }
+        .landing-container {
+            padding: 2rem;
+        }
     </style>
 </head>
 <body>
-    <h1>Bienvenido a la página web de Cuenta Regresiva</h1>
-    
-    <div class="tarjeta">
-        <h3>📊 Resumen de Base de Datos (PostgreSQL)</h3>
-        <div id="loading">Cargando contadores...</div>
-        <div id="resultados" style="display: none;">
-            <div class="metrica"><strong>Total Jóvenes:</strong> <span id="total-jovenes">0</span> / 355</div>
-            <div class="metrica"><strong>Total Asistencias:</strong> <span id="total-asistencias">0</span> / 2978</div>
-            <div class="metrica"><strong>Total Reuniones:</strong> <span id="total-reuniones">0</span> / 59</div>
-        </div>
-    </div>
 
-    <div class="tarjeta">
-        <h3>🔍 Comprobar Matriz de Asistencia Individual</h3>
-        <div class="buscador">
-            <input type="text" id="nombre-input" placeholder="Ej: Julio Munizaga o Abril Ojeda">
-            <button onclick="buscarAsistenciaPorNombre()">Buscar por Nombre</button>
-        </div>
-        <div id="error-busqueda" style="color: red; margin-top: 10px; display: none;"></div>
-        
-        <div id="resultado-individual" style="display: none; margin-top: 15px;">
-            <div class="ficha-individual">
-                <div class="grid-datos">
-                    <p><strong>Nombre Encontrado:</strong> <span id="ind-nombre"></span></p>
-                    <p><strong>RUT Relacionado:</strong> <span id="ind-rut"></span></p>
-                    <p><strong>Porcentaje Asistencia:</strong> <span id="ind-porcentaje"></span>%</p>
-                    <p><strong>Celular / Teléfono:</strong> <span id="ind-telefono"></span></p>
-                    <p><strong>Grupo de Edad:</strong> <span id="ind-grupo"></span></p>
-                    <p><strong>Estudio Asignado:</strong> <span id="ind-estudio"></span></p>
-                </div>
-                
-                <div class="seccion-ministerios">
-                    <strong>🎸 Ministerios Activos:</strong>
-                    <div id="ind-ministerios-lista" class="contenedor-badges"></div>
-                </div>
-            </div>
+    <div class="landing-container">
+        <h1>Bienvenido a CR Digital</h1>
+        <p style="margin-bottom: 2rem; color: var(--text-muted);">
+            Plataforma de gestión estadística y control de asistencia.
+        </p>
 
-            <div class="contenedor-tabla" style="margin-top: 15px;">
-                <table>
-                    <thead>
-                        <tr id="tabla-cabecera-fechas">
-                            <th>Estudiante</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr id="tabla-fila-asistencia">
-                        </tr>
-                    </tbody>
-                </table>
-            </div>
-        </div>
+        <a href="/login.html" class="btn btn-primary" style="font-size: 1.2rem; padding: 0.8rem 2rem;">
+            Iniciar Sesión
+        </a>
     </div>
 
     <script>
-        const API_URL = ''; 
-
-        async function cargarDashboard() {
-            try {
-                const [resJ, resA, resR] = await Promise.all([
-                    fetch(`${API_URL}/api/jovenes`),
-                    fetch(`${API_URL}/api/asistencias`),
-                    fetch(`${API_URL}/api/reuniones`)
-                ]);
-
-                const jovenes = await resJ.json();
-                const asistencias = await resA.json();
-                const reuniones = await resR.json();
-
-                document.getElementById('loading').style.display = 'none';
-                document.getElementById('resultados').style.display = 'block';
-
-                document.getElementById('total-jovenes').innerText = jovenes.length || 0;
-                document.getElementById('total-asistencias').innerText = asistencias.length || 0;
-                document.getElementById('total-reuniones').innerText = reuniones.length || 0;
-            } catch (e) {
-                document.getElementById('loading').innerText = "Error al cargar el dashboard global.";
+        // Pequeña mejora de experiencia de usuario:
+        // Si el usuario ya había iniciado sesión antes (tiene token), 
+        // le cambiamos el texto al botón para que entre directo al sistema.
+        window.onload = function() {
+            const token = localStorage.getItem('token');
+            if (token) {
+                const btn = document.querySelector('.btn-primary');
+                btn.textContent = 'Ir al Panel de Control';
+                btn.href = '/asistencia/semanal.html';
             }
-        }
-
-        async function buscarAsistenciaPorNombre() {
-            const nombreRaw = document.getElementById('nombre-input').value.trim();
-            const divError = document.getElementById('error-busqueda');
-            const divResultado = document.getElementById('resultado-individual');
-            
-            divError.style.display = 'none';
-            divResultado.style.display = 'none';
-
-            if (!nombreRaw) return;
-
-            try {
-                const res = await fetch(`${API_URL}/api/asistencia-individual/nombre/${encodeURIComponent(nombreRaw)}`);
-                if (!res.ok) throw new Error("No se encontró a nadie con ese nombre.");
-
-                const data = await res.json();
-                const { joven, reuniones, asistencias } = data;
-
-                divResultado.style.display = 'block';
-                
-                // 1. Cargar Datos Básicos (Con tolerancia total a nombres de propiedades)
-                document.getElementById('ind-nombre').innerText = joven.nombre;
-                document.getElementById('ind-rut').innerText = joven.rut || 'No registra';
-                document.getElementById('ind-telefono').innerText = joven.telefono || joven.celular || 'No registra';
-                document.getElementById('ind-estudio').innerText = joven.estudio || 'Sin Estudio';
-                
-                // Soporte para la propiedad del grupo de edad
-                document.getElementById('ind-grupo').innerText = joven.edad_grupo || joven.Edad_grupo || joven.grupo?.descripcion || 'No especifica';
-
-                // 2. Cargar Insignias de Ministerios dinámicamente
-                const contenedorMinisterios = document.getElementById('ind-ministerios-lista');
-                contenedorMinisterios.innerHTML = ''; 
-
-                // Intentar capturar cualquier variante del texto unificado que devuelva Postgres
-                const stringMinisterios = joven.ministerios_activos || joven.Ministerios_activos || joven.ministerios;
-
-                if (typeof stringMinisterios === 'string' && stringMinisterios !== 'Sin Ministerio') {
-                    const lista = stringMinisterios.split(',').map(m => m.trim());
-                    lista.forEach(min => {
-                        contenedorMinisterios.innerHTML += `<span class="badge-ministerio">${min}</span>`;
-                    });
-                } 
-                else if (Array.isArray(joven.ministerios) && joven.ministerios.length > 0) {
-                    joven.ministerios.forEach(m => {
-                        const nombreMinisterio = m.ministerio?.nombre || m.nombre || 'General';
-                        contenedorMinisterios.innerHTML += `<span class="badge-ministerio">${nombreMinisterio}</span>`;
-                    });
-                } 
-                else {
-                    contenedorMinisterios.innerHTML = `<span class="badge-vacio">No participa en ningún ministerio actualmente</span>`;
-                }
-
-                // 3. Renderizar la Fila Matricial de Asistencia Histórica
-                const cabecera = document.getElementById('tabla-cabecera-fechas');
-                const fila = document.getElementById('tabla-fila-asistencia');
-                cabecera.innerHTML = '<th>Estudiante</th>';
-                fila.innerHTML = `<td style="text-align: left; font-weight: bold; min-width: 130px;">${joven.nombre}</td>`;
-
-                let conteoPresentes = 0;
-                const asistenciasSet = new Set(asistencias);
-
-                reuniones.forEach(reunion => {
-                    const stringPuro = reunion.fecha.substring(0, 10);
-                    const partes = stringPuro.split('-'); 
-                    
-                    const anioCorto = partes[0].slice(-2);
-                    const mes = partes[1];
-                    const dia = partes[2];
-                    
-                    const fechaFormateada = `${dia}/${mes}/${anioCorto}`;
-                    cabecera.innerHTML += `<th>${fechaFormateada}</th>`;
-                    
-                    if (asistenciasSet.has(reunion.id)) {
-                        fila.innerHTML += `<td class="presente">X</td>`;
-                        conteoPresentes++;
-                    } else {
-                        fila.innerHTML += `<td class="ausente">-</td>`;
-                    }
-                });
-
-                const porcentaje = ((conteoPresentes / reuniones.length) * 100).toFixed(1);
-                document.getElementById('ind-porcentaje').innerText = porcentaje;
-
-            } catch (err) {
-                divError.innerText = err.message;
-                divError.style.display = 'block';
-            }
-        }
-
-        window.onload = cargarDashboard;
+        };
     </script>
 </body>
 </html>

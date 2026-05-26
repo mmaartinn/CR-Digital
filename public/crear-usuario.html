@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Crear Usuario</title>
+    <link rel="stylesheet" href="/css/global.css">
+    <link rel="stylesheet" href="/css/crear-usuario.css">
+<script>
+        // 1. Verificamos si está logueado
+        const token = localStorage.getItem('token');
+        if (!token) {
+            window.location.replace('/login.html');
+        } else {
+            // 2. Verificamos si es editor
+            try {
+                const usuarioData = JSON.parse(localStorage.getItem('usuario') || '{}');
+                if (usuarioData.rol !== 'editor') {
+                    // Si es un 'lider', lo expulsamos al informe
+                    window.location.replace('/asistencia/semanal.html');
+                }
+            } catch (e) {
+                window.location.replace('/login.html');
+            }
+        }
+    </script>
+</head>
+<body>
+
+    <nav class="navbar">
+        <div class="navbar-brand">CR Digital - Panel de Administración</div>
+        <ul class="navbar-nav">
+            <li><a href="/asistencia/semanal.html" style="color: var(--text-main);">Ver Informe</a></li>
+            <li><button onclick="cerrarSesion()" class="btn btn-secondary">Cerrar Sesión</button></li>
+        </ul>
+    </nav>
+
+    <div class="gestion-container">
+        <div class="formulario-card">
+            <h2>Crear Nuevo Líder</h2>
+            
+            <form id="form-crear-usuario">
+                <div class="form-group">
+                    <label for="nombre">Nombre Completo</label>
+                    <input type="text" id="nombre" class="form-input" required placeholder="Ej: Juan Pérez">
+                </div>
+                
+                <div class="form-group">
+                    <label for="correo">Correo Electrónico</label>
+                    <input type="email" id="correo" class="form-input" required placeholder="juan@crdigital.cl">
+                </div>
+
+                <div class="form-group">
+                    <label for="rol">Rol en el Sistema</label>
+                    <select id="rol" class="form-input" required style="cursor: pointer;">
+                        <option value="lider">Líder (Acceso estándar)</option>
+                        <option value="editor">Editor (Acceso administrativo)</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="password">Contraseña Temporal</label>
+                    <input type="password" id="password" class="form-input" required placeholder="Mínimo 6 caracteres" minlength="6">
+                </div>
+
+                <button type="submit" id="btn-crear" class="btn btn-primary btn-submit">Registrar Usuario</button>
+            </form>
+
+            <div id="alerta-mensaje" class="alerta"></div>
+        </div>
+    </div>
+
+    <script>
+        function cerrarSesion() {
+            localStorage.removeItem('token');
+            localStorage.removeItem('usuario');
+            window.location.replace('/login.html');
+        }
+
+        document.getElementById('form-crear-usuario').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const btn = document.getElementById('btn-crear');
+            const alerta = document.getElementById('alerta-mensaje');
+            
+            const nombre_completo = document.getElementById('nombre').value;
+            const correo = document.getElementById('correo').value;
+            const rol = document.getElementById('rol').value;
+            const password = document.getElementById('password').value;
+
+            // Bloquear botón mientras procesa
+            btn.disabled = true;
+            btn.textContent = 'Creando...';
+            alerta.style.display = 'none';
+
+            try {
+                const respuesta = await fetch('/api/usuarios/crear', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({ nombre_completo, correo, rol, password })
+                });
+
+                const datos = await respuesta.json();
+
+                if (respuesta.ok) {
+                    // Mostrar éxito y limpiar formulario
+                    alerta.className = 'alerta alerta-exito';
+                    alerta.textContent = '✅ ' + datos.mensaje;
+                    alerta.style.display = 'block';
+                    document.getElementById('form-crear-usuario').reset();
+                } else {
+                    // Mostrar error de validación (ej. correo duplicado)
+                    alerta.className = 'alerta alerta-error';
+                    alerta.textContent = '❌ ' + datos.error;
+                    alerta.style.display = 'block';
+                }
+            } catch (error) {
+                alerta.className = 'alerta alerta-error';
+                alerta.textContent = '❌ Error de conexión con el servidor.';
+                alerta.style.display = 'block';
+            } finally {
+                // Restaurar botón
+                btn.disabled = false;
+                btn.textContent = 'Registrar Usuario';
+            }
+        });
+    </script>
+</body>
+</html>

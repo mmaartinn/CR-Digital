@@ -124,3 +124,18 @@ model JovenMinisterio {
 
   @@id([jovenId, ministerioId])
 }
+
+// ------------------------------------------------------
+// 3. SEGURIDAD Y ACCESO AL SISTEMA
+// ------------------------------------------------------
+
+model UsuarioSistema {
+  id                 Int       @id @default(autoincrement())
+  nombre_completo    String
+  correo             String    @unique
+  password_hash      String
+  rol                String    // Ej: "editor" o "lector"
+  activo             Boolean   @default(true)
+  reset_token        String?
+  reset_token_expira DateTime?
+}

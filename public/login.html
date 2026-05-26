@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Acceso - Ministerio de Datos CR</title>
+    <!-- Vinculación de archivos CSS independientes -->
+    <link rel="stylesheet" href="/css/global.css">
+    <link rel="stylesheet" href="/css/login.css">
+</head>
+<body>
+
+    <div class="login-wrapper">
+        <div class="login-card">
+            <div class="login-brand">
+                <h1>Ministerio de Datos</h1>
+                <p>Acceso exclusivo para líderes CR</p>
+            </div>
+            
+            <form id="formulario-login">
+                <div class="form-control-group">
+                    <label for="correo">Correo Electrónico</label>
+                    <input type="email" id="correo" class="form-input" placeholder="ejemplo@correo.com" required autocomplete="email">
+                </div>
+                
+                <div class="form-control-group">
+                    <label for="password">Contraseña</label>
+                    <input type="password" id="password" class="form-input" placeholder="••••••••" required autocomplete="current-password">
+                </div>
+                
+                <button type="submit" id="btn-submit" class="btn btn-primary btn-login">Iniciar Sesión</button>
+            </form>
+            
+            <div id="mensaje-error" class="alert-danger"></div>
+        </div>
+    </div>
+
+    <script>
+        document.getElementById('formulario-login').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const btnSubmit = document.getElementById('btn-submit');
+            const correo = document.getElementById('correo').value;
+            const password = document.getElementById('password').value;
+            const divError = document.getElementById('mensaje-error');
+
+            divError.style.display = 'none';
+            btnSubmit.textContent = 'Verificando...';
+            btnSubmit.disabled = true;
+
+            try {
+                const respuesta = await fetch('/api/auth/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ correo, password })
+                });
+
+                const datos = await respuesta.json();
+
+                if (respuesta.ok) {
+                    localStorage.setItem('token', datos.token);
+                    localStorage.setItem('usuario', JSON.stringify(datos.usuario));
+                    // Redirección al informe semanal protegido
+                    window.location.replace('/asistencia/semanal.html');
+                } else {
+                    divError.textContent = datos.error;
+                    divError.style.display = 'block';
+                    btnSubmit.textContent = 'Iniciar Sesión';
+                    btnSubmit.disabled = false;
+                }
+            } catch (error) {
+                divError.textContent = "Error de conexión con el servidor.";
+                divError.style.display = 'block';
+                btnSubmit.textContent = 'Iniciar Sesión';
+                btnSubmit.disabled = false;
+            }
+        });
+    </script>
+</body>
+</html>

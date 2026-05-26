@@ -1,0 +1,206 @@
+/* CR Digital - Estilos Específicos de informe semanal */
+/* Contenedor principal de la matriz */
+.matriz-container {
+    margin: 1rem 2rem;
+    overflow-x: auto;
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);
+}
+
+/* Barra de herramientas (Filtros y Botones) */
+.toolbar {
+    margin: 2rem 2rem 1rem 2rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 1rem;
+    flex-wrap: wrap;
+}
+
+.toolbar-group {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+}
+
+.search-input {
+    padding: 0.5rem 1rem;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    width: 300px;
+    font-size: 0.95rem;
+}
+
+/* Estilos de la tabla */
+.matriz-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.85rem;
+    white-space: nowrap;
+}
+
+.matriz-table th, .matriz-table td {
+    border: 1px solid #e2e8f0;
+    padding: 0.6rem;
+    text-align: center;
+}
+
+/* Columnas Congeladas */
+.matriz-table th:nth-child(1), .matriz-table td:nth-child(1),
+.matriz-table th:nth-child(2), .matriz-table td:nth-child(2) {
+    position: sticky;
+    background-color: #f8fafc;
+    z-index: 1;
+    text-align: left;
+}
+.matriz-table td:nth-child(1) { left: 0; min-width: 120px; }
+.matriz-table td:nth-child(2) { left: 120px; min-width: 150px; font-weight: 500; }
+.matriz-table th:nth-child(1) { left: 0; z-index: 2; }
+.matriz-table th:nth-child(2) { left: 120px; z-index: 2; }
+
+/* Cabeceras y Ordenamiento */
+.matriz-table th {
+    background-color: #e2e8f0;
+    font-weight: bold;
+    text-transform: uppercase;
+}
+
+.sortable {
+    cursor: pointer;
+    user-select: none;
+    transition: background-color 0.2s;
+}
+
+.sortable:hover {
+    background-color: #cbd5e1;
+}
+
+.sortable::after {
+    content: ' ↕';
+    color: #94a3b8;
+    font-size: 0.8rem;
+}
+
+/* Colores tipo Excel (Ocultando el texto) */
+.cell-presente, .cell-ausente {
+    color: transparent; /* Oculta el 1 y el 0 a la vista humana */
+    font-size: 0;       /* Evita que ocupe espacio el texto invisible */
+}
+
+.cell-presente {
+    background-color: #c6efce !important; 
+}
+
+.cell-ausente {
+    background-color: #ffc7ce !important; 
+}
+
+.cell-racha {
+    font-size: 1.2rem;
+}
+
+/* --- SISTEMA DE PESTAÑAS --- */
+.tabs {
+    display: flex;
+    gap: 1.5rem;
+    margin: 0 2rem 1rem 2rem;
+    border-bottom: 2px solid var(--border);
+    padding-bottom: 0.5rem;
+}
+
+.tab-btn {
+    background: none;
+    border: none;
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--text-muted);
+    cursor: pointer;
+    padding: 0.5rem 1rem;
+    border-radius: 4px 4px 0 0;
+}
+
+.tab-btn:hover { color: var(--primary); }
+.tab-btn.active {
+    color: var(--primary);
+    border-bottom: 3px solid var(--primary);
+    margin-bottom: -8px; /* Superpone el borde */
+}
+
+/* Control de Vistas */
+.vista-contenido { display: none; }
+.vista-contenido.active { display: block; }
+
+/* --- VISTAS DE INFORME TIPO PDF --- */
+.informe-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(600px, 1fr));
+    gap: 2rem;
+    margin: 1rem 2rem;
+}
+
+.informe-card {
+    background: white;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 1.5rem;
+    box-shadow: var(--shadow);
+    page-break-inside: avoid; /* Evita cortes en el PDF */
+    display: flex;
+    gap: 1.5rem;
+    align-items: flex-start;
+}
+
+/* Tabla interna de cada grupo */
+.informe-tabla-wrap { flex: 1; }
+.informe-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.85rem;
+}
+.informe-table th, .informe-table td {
+    border: 1px solid #ccc;
+    padding: 0.4rem 0.6rem;
+}
+.informe-table th { background-color: #f1f5f9; text-align: center; }
+.informe-table .header-grupo { background-color: #e2e8f0; font-weight: 700; font-size: 1rem; text-align: left;}
+.informe-table .header-asistieron { background-color: #dcfce7; color: #166534; font-weight: 600; }
+.informe-table .header-faltaron { background-color: #fee2e2; color: #991b1b; font-weight: 600; }
+.text-center { text-align: center; }
+
+/* Gráfico CSS (100% Compatible con PDF) */
+.grafico-wrap {
+    width: 250px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+.grafico-titulo { font-size: 0.9rem; font-weight: 600; margin-bottom: 1rem; text-align: center;}
+.grafico-contenedor {
+    width: 100%;
+    height: 150px;
+    border-left: 2px solid #94a3b8;
+    border-bottom: 2px solid #94a3b8;
+    display: flex;
+    justify-content: space-around;
+    align-items: flex-end;
+    position: relative;
+    padding-top: 20px;
+}
+
+.linea-guia { position: absolute; width: 100%; border-top: 1px dashed #e2e8f0; left: 0; z-index: 0; }
+.linea-8 { bottom: 100%; } .linea-6 { bottom: 75%; } .linea-4 { bottom: 50%; } .linea-2 { bottom: 25%; }
+.etiqueta-eje { position: absolute; left: -15px; transform: translateX(-100%); font-size: 0.75rem; color: #64748b; }
+
+.barra-grupo {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    z-index: 1;
+    width: 50px;
+}
+.barra-valor { font-size: 0.75rem; font-weight: bold; margin-bottom: 4px; }
+.barra { width: 30px; border-radius: 2px 2px 0 0; }
+.barra-pasada { background-color: #3b82f6; color: #3b82f6;}
+.barra-actual { background-color: #ef4444; color: #ef4444;}
+.barra-label { font-size: 0.75rem; margin-top: 8px; text-align: center; color: var(--text-main); }
