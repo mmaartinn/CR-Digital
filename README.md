@@ -33,7 +33,11 @@ Esto deben hacerlo cada uno en sus computadores
 
 Luego, cada vez que vayan a trabajar en el proyecto:
 
-4. Abrir "Prisma Studio": `pnpm exec prisma studio` (para cerrarlo, usar `Ctrl + C` en la terminal)
+4. Abrir "Prisma Studio": `pnpm exec prisma studio` (para cerrarlo, usar `Ctrl + C` en la terminal) [OPCIONAL]
+
+5. Correr código de migración (`migrar.js`) y para crear un usuario con los permisos necesarios (`crearAdmin.js`) [archivos en grupo de WhatsApp]
+
+6. Iniciar servidor: `node server.js` (se abre en localhost:3000)
 
 
 ## Configuración General (MacOS)
@@ -60,4 +64,4 @@ Se utilizará el entorno de PostreSQL para el modelo de la base de datos, aquí 
 
 ![foto](images/EDR.png)
 
-**Nota:** Todavía falta agregar muchos atributos, especialmente los de la ficha y uno que otro sobre la hoja "Datos sobre Reuniones" del excel de "Estadística CR" pero no afectan la lógica general.
+**Nota:** Este modelo está actualizado a Mayo de 2026, posiblemente se enfrente a modificaciones en el futuro. De todas formas, siempre se puede acceder al modelo EDR a través de Prisma Studio.
