@@ -14,7 +14,7 @@ async function main() {
         const passwordHash = await bcrypt.hash(passwordPlana, saltRounds);
 
         // Insertamos el usuario en PostgreSQL
-        const nuevoAdmin = await prisma.usuarioSistema.create({
+        const nuevoAdmin = await prisma.UsuarioSistema.create({
             data: {
                 nombre_completo: "Admin",
                 correo: correoAdmin,
